@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENTRIA Access Control · Facility Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12161B; --panel:#1A2027; --panel-raised:#1F2730; --line:#2A343F;
+    --txt:#C7D0DA; --txt-dim:#6E7B89; --txt-faint:#4A5560;
+    --amber:#F5A623; --amber-dim:#8a6217;
+    --ok:#37C871; --ok-bg:#12351f; --bad:#E5484D; --bad-bg:#3a1518;
+    --warn:#E8B93E;
+    --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:14px;min-height:100vh}
+
+  /* top bar */
+  .topbar{display:flex;align-items:center;gap:16px;padding:0 20px;height:52px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-weight:600;letter-spacing:.08em}
+  .brand .mark{width:22px;height:22px;border:2px solid var(--amber);border-radius:4px;position:relative}
+  .brand .mark::after{content:'';position:absolute;inset:5px;background:var(--amber);border-radius:1px}
+  .brand small{color:var(--txt-dim);font-weight:400;letter-spacing:.04em}
+  .topbar .spacer{flex:1}
+  .sysstat{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--txt-dim)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok)}
+  .dot.err{background:var(--bad);box-shadow:0 0 6px var(--bad)}
+  #clock{font-family:var(--mono);font-size:12px;color:var(--txt-dim);min-width:170px;text-align:right}
+
+  /* layout */
+  .wrap{display:grid;grid-template-columns:1fr 380px;gap:0;min-height:calc(100vh - 52px)}
+  @media(max-width:960px){.wrap{grid-template-columns:1fr}}
+
+  .main{padding:24px}
+  .sectionhead{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+  .sectionhead h1{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.12em;color:var(--txt-dim);text-transform:uppercase}
+  .sectionhead .count{font-family:var(--mono);font-size:12px;color:var(--txt-faint)}
+
+  /* badge cards */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:0;overflow:hidden;transition:border-color .4s, box-shadow .4s;position:relative}
+  .card .slot{width:44px;height:7px;background:var(--bg);border:1px solid var(--line);border-radius:4px;margin:12px auto 0}
+  .card .body{padding:14px 16px 16px;text-align:center}
+  .avatar{width:64px;height:64px;border-radius:8px;background:var(--panel-raised);border:1px solid var(--line);margin:10px auto 10px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:20px;font-weight:600;color:var(--amber);transition:filter .5s,color .5s}
+  .holder{font-weight:600;font-size:15px}
+  .meta{font-family:var(--mono);font-size:11px;color:var(--txt-dim);margin-top:2px}
+  .badgeno{font-family:var(--mono);font-size:11px;color:var(--txt-faint);margin-top:1px;letter-spacing:.06em}
+  .zones{margin-top:12px;text-align:left;border-top:1px dashed var(--line);padding-top:10px}
+  .zones .zlabel{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--txt-faint);text-transform:uppercase;margin-bottom:5px}
+  .zone{font-size:12px;color:var(--txt-dim);padding:2px 0;display:flex;gap:6px;align-items:baseline}
+  .zone::before{content:'▸';color:var(--amber-dim);font-size:10px}
+  .zone.decom{color:var(--warn)}
+  .statusrow{margin-top:14px}
+  .lozenge{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;padding:5px 14px;border-radius:3px}
+  .lozenge.active{color:var(--ok);background:var(--ok-bg);border:1px solid var(--ok)}
+  .lozenge.inactive{color:var(--bad);background:var(--bad-bg);border:1px solid var(--bad)}
+  .lozenge.suspended{color:var(--warn);background:#33290f;border:1px solid var(--warn)}
+  .deactnote{font-family:var(--mono);font-size:10px;color:var(--bad);margin-top:8px;line-height:1.5;opacity:.85}
+
+  .card.inactive-card{border-color:var(--bad)}
+  .card.inactive-card .avatar{filter:grayscale(1);color:var(--txt-faint)}
+  .card.flash{animation:flash 1.2s ease-out 2}
+  @keyframes flash{0%{box-shadow:0 0 0 0 rgba(229,72,77,.7)}70%{box-shadow:0 0 0 14px rgba(229,72,77,0)}100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}}
+  @media(prefers-reduced-motion:reduce){.card.flash{animation:none}}
+
+  /* event log */
+  .side{background:var(--panel);border-left:1px solid var(--line);padding:24px 20px;display:flex;flex-direction:column}
+  @media(max-width:960px){.side{border-left:none;border-top:1px solid var(--line)}}
+  .side h2{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.12em;color:var(--txt-dim);text-transform:uppercase;margin-bottom:16px}
+  .events{display:flex;flex-direction:column;gap:0;overflow-y:auto}
+  .ev{padding:11px 0;border-bottom:1px solid var(--line);font-size:12px;line-height:1.55}
+  .ev .evtop{display:flex;gap:8px;align-items:baseline;font-family:var(--mono);font-size:10px;margin-bottom:3px}
+  .ev .etype{font-weight:600;letter-spacing:.08em;padding:1px 7px;border-radius:2px;background:var(--panel-raised);color:var(--txt-dim)}
+  .ev.deact .etype{background:var(--bad-bg);color:var(--bad)}
+  .ev.act .etype{background:var(--ok-bg);color:var(--ok)}
+  .ev .etime{color:var(--txt-faint)}
+  .ev .edetail{color:var(--txt)}
+  .ev .eref{font-family:var(--mono);font-size:10px;color:var(--amber);margin-top:2px}
+  .ev .esrc{font-family:var(--mono);font-size:10px;color:var(--txt-faint)}
+  .ev.new{background:linear-gradient(90deg,rgba(245,166,35,.07),transparent);margin:0 -20px;padding-left:20px;padding-right:20px}
+
+  .footer{margin-top:auto;padding-top:16px;font-family:var(--mono);font-size:10px;color:var(--txt-faint);line-height:1.6}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><div class="mark"></div>SENTRIA <small>· Facility Access Control v4.2</small></div>
+    <div class="spacer"></div>
+    <div class="sysstat"><span class="dot" id="conn"></span><span id="connlabel">CONTROLLER LINK OK</span></div>
+    <div id="clock"></div>
+  </div>
+
+  <div class="wrap">
+    <div class="main">
+      <div class="sectionhead">
+        <h1>Credential Registry · HQ Campus</h1>
+        <span class="count" id="count"></span>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+    <aside class="side">
+      <h2>Live Event Feed</h2>
+      <div class="events" id="events"></div>
+      <div class="footer">SENTRIA CONTROLLER NODE 01 · POLL 3000MS<br>INTEGRATION: PEOPLE OPERATIONS AUTOMATION (WEBHOOK)</div>
+    </aside>
+  </div>
+
+<script>
+const SUPABASE_URL = "https://cxbkbtpschiobtmvesch.supabase.co";
+const ANON_KEY = "sb_publishable_5l_T7UTzzn2Njtqq9es0qw_F3i2YYhW";
+const HEADERS = { apikey: ANON_KEY, Authorization: "Bearer " + ANON_KEY };
+
+let prevStatuses = {};
+let knownEventIds = new Set();
+let firstEventLoad = true;
+
+function initials(name){ return name.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase(); }
+
+function fmtTime(iso){
+  const d = new Date(iso);
+  return d.toLocaleString("en-US",{month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
+}
+
+function renderBadges(badges){
+  const grid = document.getElementById("grid");
+  document.getElementById("count").textContent = badges.length + " credentials · " + badges.filter(b=>b.status==="ACTIVE").length + " active";
+  grid.innerHTML = "";
+  for(const b of badges){
+    const changed = prevStatuses[b.badge_number] && prevStatuses[b.badge_number] !== b.status;
+    const card = document.createElement("div");
+    card.className = "card" + (b.status!=="ACTIVE" ? " inactive-card" : "") + (changed ? " flash" : "");
+    const zones = b.zones.map(z=>{
+      const decom = z.includes("DECOMMISSIONED");
+      return `<div class="zone${decom?" decom":""}">${z}</div>`;
+    }).join("");
+    const loz = b.status==="ACTIVE" ? "active" : b.status==="SUSPENDED" ? "suspended" : "inactive";
+    const deact = b.status==="INACTIVE" && b.deactivated_at
+      ? `<div class="deactnote">DEACTIVATED ${fmtTime(b.deactivated_at)}<br>REF ${b.deactivation_ref||"—"}</div>` : "";
+    card.innerHTML = `
+      <div class="slot"></div>
+      <div class="body">
+        <div class="avatar">${initials(b.holder_name)}</div>
+        <div class="holder">${b.holder_name}</div>
+        <div class="meta">${b.department} · ${b.holder_employee_id}</div>
+        <div class="badgeno">${b.badge_number} · ISSUED ${b.issued_date}</div>
+        <div class="zones"><div class="zlabel">Authorized zones</div>${zones}</div>
+        <div class="statusrow"><span class="lozenge ${loz}">${b.status}</span></div>
+        ${deact}
+      </div>`;
+    grid.appendChild(card);
+    prevStatuses[b.badge_number] = b.status;
+  }
+}
+
+function renderEvents(events){
+  const box = document.getElementById("events");
+  for(const ev of events.slice().reverse()){
+    if(knownEventIds.has(ev.id)) continue;
+    knownEventIds.add(ev.id);
+    const div = document.createElement("div");
+    const cls = ev.event_type==="DEACTIVATED" ? "deact" : (ev.event_type==="ACTIVATED"||ev.event_type==="ISSUED") ? "act" : "";
+    div.className = "ev " + cls + (firstEventLoad ? "" : " new");
+    div.innerHTML = `
+      <div class="evtop"><span class="etype">${ev.event_type}</span><span class="etime">${fmtTime(ev.created_at)}</span></div>
+      <div class="edetail">${ev.detail}</div>
+      ${ev.reference ? `<div class="eref">REF ${ev.reference}</div>` : ""}
+      <div class="esrc">SOURCE: ${(ev.source||"SYSTEM").toUpperCase()}</div>`;
+    box.prepend(div);
+  }
+  firstEventLoad = false;
+}
+
+async function poll(){
+  try{
+    const [bRes, eRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/badges?select=*&order=issued_date.asc`, {headers:HEADERS}),
+      fetch(`${SUPABASE_URL}/rest/v1/badge_events?select=*&order=created_at.desc&limit=40`, {headers:HEADERS})
+    ]);
+    if(!bRes.ok || !eRes.ok) throw new Error("fetch failed");
+    renderBadges(await bRes.json());
+    renderEvents(await eRes.json());
+    document.getElementById("conn").className = "dot";
+    document.getElementById("connlabel").textContent = "CONTROLLER LINK OK";
+  }catch(e){
+    document.getElementById("conn").className = "dot err";
+    document.getElementById("connlabel").textContent = "LINK DEGRADED · RETRYING";
+  }
+}
+
+function tick(){
+  const d = new Date();
+  document.getElementById("clock").textContent = d.toLocaleString("en-US",{weekday:"short",month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
+}
+
+tick(); setInterval(tick, 1000);
+poll(); setInterval(poll, 3000);
+</script>
+</body>
+</html>
