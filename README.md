@@ -1,5 +1,7 @@
 # jml-demo
 
+**Rebuilding the whole demo?** Start with the [build kit](kit/README.md) ([PDF](kit/JML-Demo-Build-Kit.pdf)): projects, workflows, fields, Assets, Confluence pages, automation rules, Rovo agents, SLAs, and this badge console.
+
 Source for the **SENTRIA Access Control · Facility Console**, the JML (Joiner/Mover/Leaver) badge demo. Jira Automation calls a serverless endpoint to activate, deactivate, or suspend a facility badge, and the console shows badge status and events live from Supabase.
 
 Recovered from the production Vercel deployment of `jml-badge-console` (deployment `dpl_uyiwZjUHsoYDPohoMSLbogrFsGAV`, October 2026). Every file was checked against the deployed file hash.
