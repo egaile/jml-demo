@@ -62,3 +62,106 @@ You can script all of 7.2 and 7.3. Create a token in Time to SLA → Settings �
 - `POST /api/calendar` creates calendars; 24/7 is `calendarId: "7x24"`.
 - `POST /api/notifier` creates the breach action: `actionType: "AUTOMATION"`, `thresholdType: "IS_BREACHED"` (not `HAS_BREACHED`, which is accepted but never fires), `slaNotifierActionContext: {"webhooksUrl": ..., "webhookSecret": ...}`, `slaConfiguration: "<sla id>"`.
 - `GET /api/issue-sla/{issueId}` shows a work item's clocks (`slaStatus` `STILL` / `EXCEED`), handy for testing with a 1-minute goal.
+
+## 7.5 Build it by API, end to end
+
+Everything in 7.1 to 7.3 can be created with one script: [`scripts/build_slas.py`](scripts/build_slas.py) (Python 3, standard library only). It looks up the ITF project, the Done status ids and the JML statuses by name, then creates whatever is missing: the two JSM SLAs, a business-hours calendar, the four Time to SLA SLAs and their breach actions. It is safe to re-run; anything that already exists by name is skipped.
+
+Before you run it: build rule A9 (05) and copy its webhook URL and secret, and create a Time to SLA API token (Time to SLA → Settings → API Token, which also shows your regional base URL).
+
+```bash
+export JIRA_SITE=https://<your-site>.atlassian.net JIRA_EMAIL=<you@example.com> JIRA_TOKEN=<atlassian api token>
+export TTS_BASE=https://tts-us.snapbytesapps.com TTS_TOKEN=<time to sla token>
+export A9_WEBHOOK_URL=<A9 webhook url> A9_WEBHOOK_SECRET=<A9 webhook secret> TIME_ZONE=America/New_York
+```
+
+```bash
+python3 kit/scripts/build_slas.py
+```
+
+```bash
+python3 kit/scripts/build_slas.py --apply
+```
+
+The first run only prints the plan. Options: `SKIP_JSM=1` builds only the Time to SLA part, `SLA_ENABLED=false` creates the SLAs disabled, and `NAME_PREFIX="TEST "` prefixes every name for a trial run you can delete afterwards. After creating, open each SLA's **Actions** tab: the app can add default reminder actions to new SLAs, so disable any you do not want (fan-out tasks have no assignee, so assignee emails fail).
+
+### The requests, if you prefer curl
+
+Native JSM SLA (repeat for "Revokes complete" with Revoking → Granting, `type = "HR request (with approval)"`, 28800000 ms). Status ids are from `GET $JIRA_SITE/rest/api/3/statuses/search?projectId=<JML id>`; calendar ids from `calendarRefs` in a `GET` of the same metrics URL:
+
+```bash
+curl -u "$JIRA_EMAIL:$JIRA_TOKEN" -H "Content-Type: application/json" -H "X-Atlassian-Token: no-check" \
+  -X POST "$JIRA_SITE/rest/servicedesk/1/servicedesk/agent/JML/sla/metrics" -d '{
+  "name": "Deprovisioning verified",
+  "config": {
+    "definition": {
+      "start": [{"pluginKey": "com.atlassian.servicedesk", "factoryKey": "status-sla-condition-factory", "conditionId": "<Deprovisioning status id>", "type": "Start", "name": "Entered Status: Deprovisioning", "missing": false}],
+      "pause": [],
+      "stop":  [{"pluginKey": "com.atlassian.servicedesk", "factoryKey": "status-sla-condition-factory", "conditionId": "<Verified status id>", "type": "Stop", "name": "Entered Status: Verified", "missing": false}]
+    },
+    "goals": [
+      {"jqlQuery": "type = \"Employee offboarding\"", "duration": 14400000, "calendarId": <business calendar id>, "defaultGoal": false, "subGoals": []},
+      {"jqlQuery": "", "defaultGoal": true, "subGoals": []}
+    ],
+    "slaDisplayFormat": "NEW_SLA_FORMAT"
+  }}'
+```
+
+Time to SLA business-hours calendar (the response `id` is used by the 4h and 2h SLAs):
+
+```bash
+curl -H "Authorization: Bearer $TTS_TOKEN" -H "Content-Type: application/json" -X POST "$TTS_BASE/api/calendar" -d '{
+  "calendarName": "Business Hours 9-5",
+  "businessDayInfo": {"calculationType": "CALENDAR", "isCustom": false},
+  "currentBusinessHours": [
+    {"day": "Monday", "start": "09:00", "end": "17:00"}, {"day": "Tuesday", "start": "09:00", "end": "17:00"},
+    {"day": "Wednesday", "start": "09:00", "end": "17:00"}, {"day": "Thursday", "start": "09:00", "end": "17:00"},
+    {"day": "Friday", "start": "09:00", "end": "17:00"}],
+  "timeZone": {"id": "America/New_York", "label": "America/New_York"},
+  "holidays": [], "sharedHolidays": [], "exceptions": [], "sharedExceptions": [],
+  "exceptionsPrecedence": "exceptions_override_holidays"}'
+```
+
+Time to SLA SLA (this is "Revoke access"; for the others change `name`, `description`, the goal `name`, `duration`, `calendarId` (`"7x24"` for 24/7) and `jql` as in the 7.2 table). `<ITF project id>` is from `GET $JIRA_SITE/rest/api/3/project/ITF`; the Done ids are every status named Done from `GET $JIRA_SITE/rest/api/3/statuses/search?projectId=<ITF id>&searchString=Done`:
+
+```bash
+curl -H "Authorization: Bearer $TTS_TOKEN" -H "Content-Type: application/json" -X POST "$TTS_BASE/api/sla" -d '{
+  "name": "Revoke access",
+  "description": "Time from creation of a Mover REVOKE task to Done. Grants stay blocked until revokes finish, so this clock bounds how long a transfer waits.",
+  "criticalThresholdPercentage": 80,
+  "enabled": true,
+  "calculationMethod": "ALL_CYCLES",
+  "slaScope": {"projectIds": ["<ITF project id>"]},
+  "goals": [{
+    "name": "Revoke completed within 2 business hours",
+    "goalType": "FIXED_DURATION", "context": {"duration": "2h"}, "calendarId": "<business calendar id>",
+    "goalIssues": "JQL", "jql": "project = ITF AND \"Lifecycle phase\" = \"REVOKE\"",
+    "order": 1, "defaultGoal": true, "enabled": true,
+    "priorityIdList": [], "requestTypes": [], "issueTypes": [], "assignees": []}],
+  "eventRules": [
+    {"eventType": "START", "context": null, "eventContext": null, "ruleType": "NODE", "conditionType": "OR", "childRules": [
+      {"eventType": "START", "sourceType": "DATE_TIME_FIELD", "context": {"fieldId": "created"}, "eventContext": null, "ruleType": "LEAF", "childRules": null}]},
+    {"eventType": "STOP", "context": null, "eventContext": null, "ruleType": "NODE", "conditionType": "OR", "childRules": [
+      {"eventType": "STOP", "sourceType": "CHANGE_HISTORY", "context": {"fieldType": "SYSTEM", "fieldKey": "status", "fieldValueType": "STATUS",
+        "fieldChangeType": "CHANGED_TO", "fieldValueCondition": "EQUALS", "values": [{"ids": ["<Done status id>"], "label": "Done"}]},
+        "eventContext": null, "ruleType": "LEAF", "childRules": null}]}],
+  "intervalRules": [],
+  "updateTargetCustomField": false,
+  "displayLinkedIssueEnabled": true,
+  "shareSlaType": "SHARE_THIS_SLA",
+  "displayLinkedIssuesTypes": [{"direction": "inward", "id": "<relates link type id>", "label": "relates to", "value": "<relates link type id>-inward"}],
+  "overrideDefaultEventCardinality": false,
+  "eventCardinalityMap": null}'
+```
+
+Breach action on that SLA (use the `id` the SLA call returned):
+
+```bash
+curl -H "Authorization: Bearer $TTS_TOKEN" -H "Content-Type: application/json" -X POST "$TTS_BASE/api/notifier" -d '{
+  "enabled": true, "thresholdType": "IS_BREACHED", "duration": null, "actionType": "AUTOMATION",
+  "description": "A9 SLA breach escalation",
+  "slaNotifierActionContext": {"webhooksUrl": "<A9 webhook url>", "webhookSecret": "<A9 webhook secret>"},
+  "appliedToAllGoals": true, "appliedGoals": null, "slaConfiguration": "<sla id>"}'
+```
+
+To check a clock while testing: `GET $TTS_BASE/api/issue-sla/<work item id>` (the numeric id, not the key). `slaStatus` is `STILL` while running and `EXCEED` once breached.

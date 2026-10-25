@@ -28,7 +28,7 @@ Northwind Labs, three employees, three acts:
 | 04 | [Seed work items](04-seed-work-items.md) | The three characters' requests |
 | 05 | [Automation rules](05-automation-rules.md) | A1 to A9 and Demo reset: spec tables and paste-ready "Create with Rovo" prompts |
 | 06 | [Rovo agents](06-rovo-agents.md) | People Ops Concierge, Access Audit, Knowledge Audit, Deprovisioning: instructions, knowledge, tools, test prompts |
-| 07 | [SLAs](07-slas.md) | Native JSM SLAs on the requests, Time to SLA clocks on the tasks, breach escalation |
+| 07 | [SLAs](07-slas.md) | Native JSM SLAs on the requests, Time to SLA clocks on the tasks, breach escalation; UI steps or one API script ([scripts/build_slas.py](scripts/build_slas.py)) |
 | 08 | [Badge console](08-badge-console.md) | The SENTRIA badge system: deploy this repo or build your own with the AI prompt |
 | 09 | [Stage script and reset](09-stage-script-and-reset.md) | Verification checks, the talk run-sheet, resetting after a rehearsal |
 | 10 | [Lessons learned](10-lessons-learned.md) | What cost us time |
