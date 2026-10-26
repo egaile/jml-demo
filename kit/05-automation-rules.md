@@ -188,3 +188,15 @@ Create a rule named "A9 SLA breach escalation". Trigger: incoming webhook, with 
 Rovo agents cannot link work items (there is no link tool), so this rule does it. Trigger: **Work item created**, scope JML + ITF. Condition: `{{issue.summary}}` matches the regex `(Handover:|STILL RUNNING:).*`. Then create the variable `empId` = `{{issue.summary.match(".*(?:from|for) ([A-Za-z0-9._-]+).*")}}`. Then branch over JQL `project = JML AND type = "Employee offboarding" AND text ~ "{{empId}}" AND statusCategory != Done` and **link** the branch item to the trigger item with "relates to".
 
 `text ~` is used because a Short text custom field like Employee ID may not be JQL-searchable; the seeds carry the employee ID in their description. The agents' instructions must keep the summary formats "Handover: [group] from [employee ID] to [successor]" and "STILL RUNNING: [what] for [employee ID]".
+
+## Demo: teams done (stage helper)
+
+Days pass between "Start deprovisioning" and "Verify" in real life; on stage they pass in one comment. Trigger: **Work item commented**, condition work type = Employee offboarding and the comment contains `#teams-done`.
+- Branch over `issue in linkedIssues("{{issue.key}}", "relates to") AND statusCategory != Done AND summary !~ "\"STILL RUNNING\""`, minus the Security "revoke all badge zones" task. For each one, set Evidence, comment "Evidence: …" (the entitlements task names every Access Policy on the role), and transition to Done.
+- **Lookup objects** (Facilities, `objectTypeId = <Badge type id> AND "Badge Number" = "{{issue.customfield_<badge number field id>}}"`), then **Send web request** PUT `https://api.atlassian.com/jsm/assets/workspace/<workspace id>/v1/object/{{lookupObjects.id}}`. The body sets Status = INACTIVE, Deactivation Ref = {{issue.key}} and Zones = only the decommissioned zone.
+- **Lookup objects** (People, by Employee ID), then the same kind of PUT clearing **Approved Access**.
+- Each web request has a hidden **Authorization** header `Basic <base64 of email:api-token>` that you paste in the UI.
+
+Why web requests: Jira's **Edit object** action fails with "can't run" in a rule triggered by a work item, because no Assets object is in context. It also stops the rest of the rule. Lookup objects plus the Assets REST API works.
+
+Leaving the badge-zones task open is deliberate: it is the runbook step that missed the legacy zone, and an open DEPROVISION task stops A8 from verifying the Leaver.
