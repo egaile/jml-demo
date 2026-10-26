@@ -155,7 +155,7 @@ Add these at the end of each agent's Guardrails and publish. Without them the ag
 #### All three task-creating agents: Access Audit, Knowledge Audit Agent, Deprovisioning
 
 ```
-Linking: never set the Parent field on tasks you create; Mover and Leaver work items cannot be parents. Create each task with no parent, then link it with the link tool: "relates to" to the Mover or Leaver, and for GRANT tasks also "is blocked by" each REVOKE task. If you cannot link, say so.
+Linking: never set the Parent field on tasks you create; Mover and Leaver work items cannot be parents. Do not try to link tasks yourself: automation links Handover and STILL RUNNING tasks to the Leaver automatically. Keep the summary formats exactly as written above, including the employee ID.
 Never claim an action you did not complete. Only name a work item key that a create or search action actually returned to you; if an action fails or is unavailable, say so plainly.
 Finish the whole job in one pass: after creating the tasks, also propose the comment and the status field update, so the user can approve everything together.
 ```
@@ -179,8 +179,8 @@ Status field: set the field "Deprovisioning status" (customfield_10749) to the o
 In the closure report, name every zone still listed on the Badge object, and say explicitly when a zone contains DECOMMISSIONED: that is the high finding.
 ```
 
-### Tools
+### Linking is done by automation
 
-Access Audit, Knowledge Audit Agent and Deprovisioning each need a tool that **links work items** (search Add tools for "link"). In the run, both Knowledge Audit and Deprovisioning created tasks but couldn't link them.
+Rovo has no tool for linking Jira work items, so rule A10 (05) links the agents' Handover and STILL RUNNING tasks to the Leaver.
 
 In chat, Rovo shows every write as a review card (Create / Create all / Confirm selected): nothing is written until you approve.

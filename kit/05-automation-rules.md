@@ -183,3 +183,8 @@ Scope JML + ITF. After saving the trigger, copy its webhook URL and secret into 
 Create a rule named "A9 SLA breach escalation". Trigger: incoming webhook, with the issues provided in the webhook. Then edit the work item and add the label sla-breach-flagged. Then branch for each linked work item with link type "relates to". Inside the branch, condition: work type equals "Employee offboarding". Then comment: "SLA breached on {{triggerIssue.summary}}, owner {{triggerIssue.Fan-out team}}". Then edit the branch work item and set Deprovisioning status to the option "Findings open", selected from the field options.
 ```
 
+## A10. Link agent tasks
+
+Rovo agents cannot link work items (there is no link tool), so this rule does it. Trigger: **Work item created**, scope JML + ITF. Condition: `{{issue.summary}}` matches the regex `(Handover:|STILL RUNNING:).*`. Then create the variable `empId` = `{{issue.summary.match(".*(?:from|for) ([A-Za-z0-9._-]+).*")}}`. Then branch over JQL `project = JML AND type = "Employee offboarding" AND text ~ "{{empId}}" AND statusCategory != Done` and **link** the branch item to the trigger item with "relates to".
+
+`text ~` is used because a Short text custom field like Employee ID may not be JQL-searchable; the seeds carry the employee ID in their description. The agents' instructions must keep the summary formats "Handover: [group] from [employee ID] to [successor]" and "STILL RUNNING: [what] for [employee ID]".
