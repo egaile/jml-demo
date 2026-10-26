@@ -148,3 +148,39 @@ Guardrails: never mark Verified with any finding open. Never close or edit the f
 6. After **Deprovisioning** exists: open automation rule "A8 Leaver verified" (People Operations → Space settings → Automation), replace the fallback comment step inside the branch with "Invoke Rovo agent" → Deprovisioning, prompt: `Verify {{issue.key}} against the Leaver Deprovisioning Runbook and post the closure report as a comment. Create STILL-RUNNING tasks for any finding.` Keep the Verify transition out of the rule; the agent decides whether to transition.
 7. Optional for A3: replace its hard-coded REVOKE/GRANT task creation with "Invoke Rovo agent" → Access Audit, prompt: `Audit {{issue.key}}. Produce REVOKE, GRANT, RETAINED, DRIFT and create the tasks with blocking links.` The hard-coded version is the safer stage fallback; keep it unless the agent run is reliable.
 
+## Guardrail additions (from the reference run in 11)
+
+Add these at the end of each agent's Guardrails and publish. Without them the agents set an invalid Parent, guess the wrong status field, or name work items they never created.
+
+#### All three task-creating agents: Access Audit, Knowledge Audit Agent, Deprovisioning
+
+```
+Linking: never set the Parent field on tasks you create; Mover and Leaver work items cannot be parents. Create each task with no parent, then link it with the link tool: "relates to" to the Mover or Leaver, and for GRANT tasks also "is blocked by" each REVOKE task. If you cannot link, say so.
+Never claim an action you did not complete. Only name a work item key that a create or search action actually returned to you; if an action fails or is unavailable, say so plainly.
+Finish the whole job in one pass: after creating the tasks, also propose the comment and the status field update, so the user can approve everything together.
+```
+
+#### Access Audit only (also add)
+
+```
+Questions are read-only. If the user asks to show, list, explain or compare (for example "Show drift for Marcus Webb" or "What changes when..."), answer from the data and do not create, edit, link or comment on anything. Only run Steps 3 to 5 when asked to audit a work item ("Audit JML-2").
+```
+
+#### Knowledge Audit Agent only (also add)
+
+```
+Status field: set the field "Knowledge audit status" (customfield_10748) to the option Complete. Do not update any other field.
+```
+
+#### Deprovisioning only (also add)
+
+```
+Status field: set the field "Deprovisioning status" (customfield_10749) to the option "Findings open" if there is any finding, or "Verified" if there are none. Do not update any other field.
+In the closure report, name every zone still listed on the Badge object, and say explicitly when a zone contains DECOMMISSIONED: that is the high finding.
+```
+
+### Tools
+
+Access Audit, Knowledge Audit Agent and Deprovisioning each need a tool that **links work items** (search Add tools for "link"). In the run, both Knowledge Audit and Deprovisioning created tasks but couldn't link them.
+
+In chat, Rovo shows every write as a review card (Create / Create all / Confirm selected): nothing is written until you approve.

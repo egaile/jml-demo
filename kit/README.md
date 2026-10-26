@@ -32,8 +32,9 @@ Northwind Labs, three employees, three acts:
 | 08 | [Badge console](08-badge-console.md) | The SENTRIA badge system: deploy this repo or build your own with the AI prompt |
 | 09 | [Stage script and reset](09-stage-script-and-reset.md) | Verification checks, the talk run-sheet, resetting after a rehearsal |
 | 10 | [Lessons learned](10-lessons-learned.md) | What cost us time |
+| 11 | [End-to-end walkthrough](11-demo-walkthrough.md) | Every demo step with what to do, what you should see, how to check it, and what happened in our reference run |
 
-**Build order:** 08 (console, any time) → 01 → 02 → 03 → 05 → 04 → 06 → 07 → 09.
+**Build order:** 08 (console, any time) → 01 → 02 → 03 → 05 → 04 → 06 → 07 → 09 → 11.
 
 ## What you need
 
