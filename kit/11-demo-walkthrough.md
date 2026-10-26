@@ -105,6 +105,14 @@ Or in the app: Time to SLA → Recalculation → new recalculation with that JQL
 - Step 5 needed a nudge: `Now do Step 5: post the summary comment on JML-1 with the table (Group, Items, Successor, Task key) and the highest-risk line, and set Knowledge audit status to Complete.` The comment posted, but the field update targeted the wrong field ("customfield_10113 is not editable"). Knowledge audit status was set by hand.
 - The fixes are the linking rule and the exact field id in the instructions (06).
 
+**Re-test after the fixes (V9 instructions, Sub-task removed from JML, rule A10):** in a fresh chat, `Audit JML-1.` produced review cards straight away.
+- With Sub-task still in the project, the cards defaulted to **Sub-task** ("Select a parent to select this item"). `Use the work type with id 10002 ("Task"), not Sub-task (10003)…` fixed it, and removing Sub-task from JML's work types prevents it.
+- After approval, JML-155 and JML-156 (Task, no parent, no assignee) were linked to JML-1 by **A10** within seconds.
+- Step 5 needed one follow-up prompt (`Now post the summary comment on JML-1 … and set Knowledge audit status to Complete.`). The comment used the real keys and the field was set to Complete correctly.
+
+**Stage version:** two prompts, `Audit JML-1.` then `Post the report and set the status.`, approving each card ("the agent proposes, a human approves").
+
+
 ### Step 9. Start deprovisioning
 **Do:** put the badge console on screen. On JML-1 click **Start deprovisioning** and switch to the console.
 **Expect:**
@@ -132,6 +140,14 @@ Or in the app: Time to SLA → Recalculation → new recalculation with that JQL
 1. Before Verify, close the identity, entitlement and team tasks with evidence, but not every DEPROVISION task: if they are all Done, A8 verifies the Leaver.
 2. Have A7 also set the Assets Badge Status to INACTIVE.
 3. Add to the Deprovisioning instructions: name every zone still on the badge.
+
+**Re-test after the fixes (V9 instructions, "teams done" before Verify):**
+- After Start deprovisioning, the team tasks were closed with evidence (Evidence field + comment): identity, entitlements, successor, manager, facilities, payroll and the handovers. Only the Security "revoke all badge zones" task was left open.
+- In Assets the badge was set INACTIVE with the Deactivation Ref, its active zones were removed (only "Legacy data center [DECOMMISSIONED]" left), and Lawrence's Approved Access was cleared.
+- `Verify JML-1.` returned a closure table with steps 1 and 3 to 8 Verified and **one Finding** (step 2, badge zones), naming the DECOMMISSIONED zone as the high finding.
+- The writes needed a follow-up: `Now do the writes: create the STILL RUNNING task in ITF (work type id 10002), post the Closure report as a comment on JML-1, and set Deprovisioning status to Findings open.` It created one STILL RUNNING task (linked by A10), and a second nudge produced the comment and the status (Findings open). JML-1 was not Verified.
+
+**Stage version:** `Verify JML-1.`, then `Do the writes.` (repeat once if it stops after the task), approving each card. Prepare the "teams done" state before the talk, or run it right after Start deprovisioning.
 
 ### Step 11. The breach (A9)
 **Expect:** about 15 min after step 9, if ITF's badge-zones task is still open, its clock breaches and Time to SLA's "Trigger Jira automation" action fires A9 within 1 to 2 min:

@@ -184,3 +184,14 @@ In the closure report, name every zone still listed on the Badge object, and say
 Rovo has no tool for linking Jira work items, so rule A10 (05) links the agents' Handover and STILL RUNNING tasks to the Leaver.
 
 In chat, Rovo shows every write as a review card (Create / Create all / Confirm selected): nothing is written until you approve.
+
+## Tested instruction changes (from the reference run)
+
+What finally made the task-creating agents reliable:
+1. **Top line:** `Never invent a work item key. Only write a key that a tool returned in this conversation. If a task has not been created yet, write "pending" in its Task key cell.` Without it they reported plausible but non-existent keys.
+2. **Name the tools and the work type** in the step that writes: "Use the Create work items tool … work type Task (work type id 10002, never Sub-task) … no parent, no assignee". The agents otherwise picked Sub-task, which needs a parent and fails.
+3. **Remove Sub-task from the JML project's work types** if nothing uses it.
+4. **Give status fields by id** (Knowledge audit status customfield_10748, Deprovisioning status customfield_10749).
+5. **No assignee** on handover tasks if the successor is not a JSM agent ("cannot be assigned issues").
+6. **Expect two prompts:** the agents analyse on the first prompt and write on the second ("Do the writes." / "Post the report and set the status."). Every write is a review card the presenter approves.
+7. **Linking is done by rule A10** (05), because Rovo has no Jira link tool.
