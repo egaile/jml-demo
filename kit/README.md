@@ -36,6 +36,8 @@ Northwind Labs, three employees, three acts:
 
 **Build order:** 08 (console, any time) → 01 → 02 → 03 → 05 → 04 → 06 → 07 → 09 → 11.
 
+**Or let a script do most of it:** `provision/provision.py --site https://<your-site>.atlassian.net --edition atlassian` builds chapters 01 to 05 and 07 by API on a new site and writes a per-site guide for the rest (see [provision/README.md](../provision/README.md)).
+
 ## What you need
 
 - Atlassian Cloud with **Jira Service Management Premium** (Assets, approvals), **Confluence**, **Rovo**, and org admin rights to install **Appfire Time to SLA** from the Marketplace.

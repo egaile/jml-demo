@@ -10,6 +10,7 @@ Environment:
   A9_WEBHOOK_URL      rule A9's incoming webhook URL (optional: without it, no breach actions are created)
   A9_WEBHOOK_SECRET   rule A9's incoming webhook secret
   TIME_ZONE           business-hours calendar time zone (default America/New_York)
+  TTS_CALENDAR        name of the Time to SLA business-hours calendar (default "Business Hours 9-5")
   JSM_CALENDAR        name of the JSM calendar for the native SLAs (default: the first non-24/7 calendar)
   SLA_ENABLED         "false" to create the Time to SLA SLAs disabled (default true)
   NAME_PREFIX         prefix every created name (for a dry test); default none
@@ -80,7 +81,7 @@ for name, start, stop, jql, hours in [] if E("SKIP_JSM") == "1" else [
 
 # ---------- 2. Time to SLA calendar ----------
 print("== Time to SLA (ITF)")
-CAL_NAME = PREFIX + "Business Hours 9-5"
+CAL_NAME = PREFIX + E("TTS_CALENDAR", "Business Hours 9-5")
 s, tcals = tts("GET", "/api/calendar"); need(s == 200, "read calendars (check TTS_BASE region and token)", s, tcals)
 bh = next((c["id"] for c in tcals if c["calendarName"] == CAL_NAME), None)
 if bh: print(f"  calendar {CAL_NAME}: exists")
